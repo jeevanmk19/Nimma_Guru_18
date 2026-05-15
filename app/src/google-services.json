@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "77819962844",
+    "project_id": "nimma-guru-86577",
+    "storage_bucket": "nimma-guru-86577.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77819962844:android:ac8fc4665e5c1804ca9b19",
+        "android_client_info": {
+          "package_name": "com.nimmaguru.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "77819962844-mu7aqg09ldh0pfvv8mg04tvqp1c6517n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nimmaguru.app",
+            "certificate_hash": "bbebd29e73176334b1eb679fee35a9fe21bd94fd"
+          }
+        },
+        {
+          "client_id": "77819962844-munkn5qgto0sad1h4p4scoqfi82tclcc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCM1qaEBLpDmhwzOzZbwbOv_W_T-tYz3cY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "77819962844-munkn5qgto0sad1h4p4scoqfi82tclcc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

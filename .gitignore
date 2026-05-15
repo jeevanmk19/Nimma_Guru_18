@@ -1,0 +1,65 @@
+# Nimma Guru — .gitignore
+
+# Gradle / Build
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local config
+local.properties
+keystore.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Kotlin
+*.class
+
+# Logs / heap dumps
+*.log
+*.hprof
+
+# APK / Bundle
+*.apk
+*.aab
+
+# Firebase
+app/google-services.json
+.firebase/
+.firebaserc
+
+# Keystores (NEVER commit these — passwords are in keystore.properties)
+*.keystore
+*.jks
+release.keystore
+
+# Node (if used)
+node_modules/
+
+# Environment files
+.env
+
+# Project notes / ephemera
+nammaguru_notes/
+graphify-out/
+done.json
+
+*.pdf
+
+# Custom agent folder
+.agent/
+*.md
+nimmaguru-logs.txt
+.kotlin/
+gitleaks.exe
+student_guru_sync_plan.md
+report.json

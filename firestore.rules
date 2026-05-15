@@ -1,0 +1,140 @@
+rules_version = '2';
+
+// Nimma Guru Firestore Security Rules
+// Schema in code: top-level /sessions, top-level /gurus, top-level /users,
+//                 subcollection /gurus/{guruId}/appreciations,
+//                 top-level /all_appreciations (denormalized feed).
+//
+// P0.6 (post-audit): rules now actually enforce ownership against the
+// schema the client uses, so the implementation.md C3 hole is closed.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: callers must be authenticated AND not anonymous.
+    // Anonymous users have provider="anonymous" — Phone-OTP users have "phone".
+    function isRealUser() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    function isAdmin() {
+      return isRealUser()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isPublishedGuru() {
+      return isRealUser()
+        && exists(/databases/$(database)/documents/gurus/$(request.auth.uid));
+    }
+
+    // Validate that an `attendees` mutation only adds/removes the caller's UID.
+    // Used by the RSVP path so anyone signed in can join/leave but no one can
+    // overwrite the whole list or kick another student out.
+    function attendeesDiffIsSelfOnly() {
+      let before = resource.data.attendees;
+      let after = request.resource.data.attendees;
+      let added = after.removeAll(before);
+      let removed = before.removeAll(after);
+      return (added.size() == 0 || (added.size() == 1 && added[0] == request.auth.uid))
+        && (removed.size() == 0 || (removed.size() == 1 && removed[0] == request.auth.uid));
+    }
+
+    // ═══ GURU PROFILES ═══
+    match /gurus/{guruId} {
+      // Public profiles readable by anyone (guest access — FR06).
+      allow read: if true;
+
+      // Create / update only by the owning Guru.
+      allow create: if isRealUser()
+        && request.auth.uid == guruId
+        && request.resource.data.ownerId == request.auth.uid;
+
+      allow update: if isRealUser()
+        && request.auth.uid == guruId;
+
+      // Delete only by admin.
+      allow delete: if isAdmin();
+
+      // Per-guru appreciations subcollection.
+      match /appreciations/{noteId} {
+        // Reads only show approved notes — hide moderation queue by default.
+        allow read: if resource.data.isApproved == true || isAdmin();
+
+        // Any signed-in real user can post an appreciation.
+        allow create: if isRealUser()
+          && request.resource.data.isApproved == false
+          && request.resource.data.message is string
+          && request.resource.data.message.size() >= 10
+          && request.resource.data.message.size() <= 500;
+
+        // Approve / reject only by admin.
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // ═══ TOP-LEVEL SESSIONS ═══
+    // This is what SessionRepositoryImpl actually writes to.
+    match /sessions/{sessionId} {
+      allow read: if true;
+
+      // Only published Gurus can create a session, and only for themselves.
+      allow create: if isPublishedGuru()
+        && request.resource.data.guruId == request.auth.uid;
+
+      // Two distinct update paths:
+      //   1. The owning Guru can edit any field of their own session.
+      //   2. Any real user can RSVP / cancel by mutating ONLY the attendees array,
+      //      and only adding/removing their own UID.
+      allow update: if isRealUser() && (
+        resource.data.guruId == request.auth.uid
+        || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendees'])
+          && attendeesDiffIsSelfOnly()
+          && resource.data.status == 'upcoming'
+        )
+      );
+
+      allow delete: if isRealUser() && resource.data.guruId == request.auth.uid;
+    }
+
+    // ═══ GLOBAL APPRECIATIONS FEED (denormalised) ═══
+    match /all_appreciations/{noteId} {
+      allow read: if resource.data.isApproved == true || isAdmin();
+      allow create: if isRealUser()
+        && request.resource.data.isApproved == false
+        && request.resource.data.message is string
+        && request.resource.data.message.size() >= 10
+        && request.resource.data.message.size() <= 500;
+      allow update, delete: if isAdmin();
+    }
+
+    // ═══ USER PROFILES ═══
+    match /users/{userId} {
+      // Users read their own doc; admins can read any (for moderation).
+      allow read: if isRealUser() && (request.auth.uid == userId || isAdmin());
+
+      // Users create/update their own doc, but cannot promote themselves.
+      // Role can only be set to "student" by the user; transitions to "guru"
+      // happen via UserRepository.upgradeToGuru(), which uses .update("role","guru")
+      // — that's still gated by request.auth.uid == userId, but we additionally
+      // block clients from setting role="admin".
+      allow create: if isRealUser()
+        && request.auth.uid == userId
+        && (
+          !('role' in request.resource.data)
+          || request.resource.data.role in ['student', 'guru']
+        );
+
+      allow update: if isRealUser()
+        && request.auth.uid == userId
+        && (
+          !('role' in request.resource.data)
+          || request.resource.data.role in ['student', 'guru']
+        );
+
+      allow delete: if isAdmin();
+    }
+  }
+}

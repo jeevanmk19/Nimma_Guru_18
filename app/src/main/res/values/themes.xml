@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        Activity-level theme. Compose draws all UI via NimmaGuruTheme, but the
+        Activity theme still controls splash, status-bar/nav-bar tinting, and
+        DayNight handling.
+
+        We use AppCompat.DayNight.NoActionBar because:
+          - appcompat is already a dependency (vs. com.google.android.material
+            which we'd need to add for Theme.Material3.*),
+          - DayNight gives automatic light/dark switching following the system,
+          - NoActionBar lets Compose's TopAppBar own the title area.
+    -->
+    <style name="Theme.NimmaGuru" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>
